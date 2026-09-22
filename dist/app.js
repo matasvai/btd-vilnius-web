@@ -1,6 +1,7 @@
 import {DATA} from './data.js';
 import {defaults,cases,timeText,startPoint,toCoordinates,fromCoordinates,onMap,mapBounds,compassBearing,validStart,constrainStart,nominalAt,altitudeBands} from './model.js';
 import {cloudAt} from './cloud.js';
+import {POPULATION} from './population.js';
 let errors={speed:20,direction:10,position:.5};
 let state={...defaults},result,playing=false,timer,frame=null,revision=0,busy=false,pending=null,lastAltitude;
 const worker=new Worker(new URL('./simulation-worker.js',import.meta.url),{type:'module'});
@@ -26,7 +27,7 @@ function stop(){playing=false;clearInterval(timer);$('play').textContent='▶';}
 function initMap(){
  const Z=DATA.zones;let svg='';
  for(let i=-60;i<=80;i+=10)svg+=`<path d="M${i},-80V80M-80,${i}H100" stroke="#234d3c" stroke-width=".12"/>`;
- svg+=`<path d="${path([...DATA.border,[-200,-100],[-200,100]])}" fill="#0a3024"/><path d="${path(Z.tma5)}" fill="none" stroke="#bc5858" stroke-dasharray="1.2 1.2" stroke-opacity=".45" stroke-width=".25"/><path d="${path(Z.tma4)}" fill="#bc5858" fill-opacity=".06" stroke="#bc5858" stroke-opacity=".5" stroke-width=".3"/><path d="${path(Z.tma3)}" fill="#d08069" fill-opacity=".10" stroke="#d99378" stroke-width=".25"/><path d="${path(Z.ctr)}" fill="#71b891" fill-opacity=".18" stroke="#85cc9d" stroke-width=".45"/>`;
+ svg+=`<path d="${path([...DATA.border,[-200,-100],[-200,100]])}" fill="#0a3024"/><g id="population-layer" opacity=".65" pointer-events="none">${POPULATION.bins.map(bin=>`<path d="${bin.path}" fill="#f0eee3" fill-opacity="${bin.opacity}"/>`).join('')}<defs><pattern id="population-missing" width="1" height="1" patternUnits="userSpaceOnUse"><path d="M0,1L1,0" stroke="#b7c9bb" stroke-opacity=".25" stroke-width=".08"/></pattern></defs><path d="${POPULATION.missingPath}" fill="url(#population-missing)"/></g><path d="${path(Z.tma5)}" fill="none" stroke="#bc5858" stroke-dasharray="1.2 1.2" stroke-opacity=".45" stroke-width=".25"/><path d="${path(Z.tma4)}" fill="#bc5858" fill-opacity=".06" stroke="#bc5858" stroke-opacity=".5" stroke-width=".3"/><path d="${path(Z.tma3)}" fill="#d08069" fill-opacity=".10" stroke="#d99378" stroke-width=".25"/><path d="${path(Z.ctr)}" fill="#71b891" fill-opacity=".18" stroke="#85cc9d" stroke-width=".45"/>`;
  for(const name of ['tma1','tma2'])svg+=`<path d="${path(Z[name])}" fill="#d08069" fill-opacity=".2" stroke="#d99378" stroke-width=".25"/>`;
  svg+=`<path d="M${DATA.border.map(q=>`${q[0]},${-q[1]}`).join('L')}" fill="none" stroke="#c1c4bf" stroke-width=".4"/><circle cx="0" cy="0" r="10" stroke="#e9cc74" stroke-dasharray="1 1" stroke-width=".3" fill="none"/><polyline id="nominal-path" stroke="#fdb913" stroke-opacity=".8" stroke-width=".45" fill="none"/>`;
  svg+='<defs><clipPath id="red-height" clipPathUnits="userSpaceOnUse"><path id="red-zones" clip-rule="nonzero"/></clipPath><clipPath id="yellow-height" clipPathUnits="userSpaceOnUse"><path id="yellow-zones" clip-rule="nonzero"/></clipPath>';
@@ -112,4 +113,7 @@ if(context?.registerTool){
   const cloud=cloudAt(state,+$('time').value,errors);return {start:toCoordinates(startPoint(state)),direction:state.direction,controlledEntry:result.entry,ctrMinutes:result.ctr,within10kmMinutes:result.near,forecastMinutes:+$('time').value,cloud90AreaKm2:cloud.area90};
  }})).catch(()=>{});}catch{}
 }
-initMap();update();
+initMap();
+$('population-toggle').addEventListener('change',e=>{attrs('population-layer',{display:e.target.checked?'inline':'none'});$('population-opacity').disabled=!e.target.checked;});
+$('population-opacity').addEventListener('input',e=>{attrs('population-layer',{opacity:+e.target.value/100});$('population-opacity-out').textContent=e.target.value+'%';});
+update();
