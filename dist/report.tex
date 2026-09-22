@@ -121,18 +121,18 @@ The accompanying site includes the model, eight presets, PDF report and LaTeX so
 
 \newpage
 \section*{Probability cloud and custom starts}
-The starting position can now be moved on the map or entered as coordinates. Set wind direction with the compass or exact bearing. All timers begin at the selected start, which may be on either side of the border. Report examples retain their original nearest-border start.
+Custom starts are restricted to Belarus or the border; dragging into Lithuania stops at the border. Coordinate entry follows the same rule. All timers begin at the selected start. The original border presets and report examples are unchanged.
 
-\includegraphics[width=\textwidth]{figures/probability-cloud.pdf}
+{\centering\includegraphics[width=.95\textwidth]{figures/probability-cloud.pdf}\par}
 
 {\small\textbf{Figure 3.} Example at 30 minutes for the default climbing scenario. Independent initial-position errors have a standard deviation of 0.5 km per horizontal axis; wind-speed multiplier uncertainty is 20\%, and direction uncertainty is 10\textdegree. The cloud is conditional on those assumed distributions, not calibrated against observations. All marks and contours are vector graphics.}
 
 \textbf{Construction.} The model uses 512 fixed, reproducible Monte Carlo draws. Horizontal starting errors and speed/direction errors are independent Gaussian variables. The sampled speed multiplier is clipped at zero. Each wind perturbation persists throughout a trajectory and is shared across both wind layers; altitude follows the selected climb without random error. Horizontal drift is integrated analytically within each constant-wind layer.
 
-At each displayed time, the sample mean and covariance define an ellipse orientation. The 50th and 90th percentiles of the samples' squared Mahalanobis distances set the two contour sizes. Thus approximately 50\% and 90\% of the generated positions lie inside the respective ellipses. Shading on the website is illustrative; it is not an independently estimated probability density.
+At each displayed time, the sample mean and covariance define an ellipse orientation. The 50th and 90th percentiles of the samples' squared Mahalanobis distances set the two contour sizes. Thus approximately 50\% and 90\% of the generated positions lie inside the respective ellipses. Cloud colors compare altitude with local airspace limits: red is inside the modeled height band; yellow is at most 150 m below its floor; green is outside these bands. The CTR starts at ground level, and green does not establish safety. Shading is illustrative, not a fitted density.
 
 \textbf{Example size.} At 30 minutes the 90\% ellipse has principal-axis dimensions of approximately 15.3 by 13.6 km and an area of 163 km$^2$. The displayed fraction of samples in controlled airspace is a conditional position statistic, not collision probability, a first-entry probability, or a trigger for airport closure.
 
-\textbf{Limits and checks.} Ellipses can enclose empty space when the distribution is skewed or non-elliptical. The assumptions omit time-changing forecast errors, vertical uncertainty and terrain. The cloud is not a worst-case bound: some samples lie outside the 90\% contour. Tests check empirical contour coverage, reproducibility, coordinate round trips and zero-error agreement with the nominal trajectory. The site and its source repository remain access-restricted.
+\textbf{Limits and checks.} Ellipses can enclose empty space when the distribution is skewed or non-elliptical. The assumptions omit time-changing forecast errors, vertical uncertainty and terrain. The cloud is not a worst-case bound: some samples lie outside the 90\% contour. Checks cover contour coverage, reproducibility, border constraints, color thresholds and trajectory agreement. The website is public; the development repository remains private.
 
 \end{document}
