@@ -1,7 +1,10 @@
 import {DATA} from './data.js';
+import {REGION} from './region.js';
+import {inside,inPolygons,zoneAt,altitudeBands} from './airspace.js';
+export {inside,zoneAt,altitudeBands};
 export const defaults={start:0,origin:null,speed:10,direction:300,altitude:350,ascent:2,ceiling:1500,shear:false,upperSpeed:15,upperDirection:315,delay:5};
-export const mapBounds={west:-40,east:65,south:-55,north:48};
-export function startPoint(s){return s.origin??DATA.starts[s.start].xy;}
+export const mapBounds=REGION.bounds;
+export function startPoint(s){return s.origin??presetOrigins[s.start];}
 export function toCoordinates([x,y]){const {kmPerDegree:k,cosLatitude:c}=DATA.projection;return {latitude:DATA.airport[1]+y/k,longitude:DATA.airport[0]+x/(k*c)};}
 export function fromCoordinates(latitude,longitude){const {kmPerDegree:k,cosLatitude:c}=DATA.projection;return [(longitude-DATA.airport[0])*k*c,(latitude-DATA.airport[1])*k];}
 export function onMap([x,y]){return Number.isFinite(x)&&Number.isFinite(y)&&x>=mapBounds.west&&x<=mapBounds.east&&y>=mapBounds.south&&y<=mapBounds.north;}
@@ -16,35 +19,25 @@ export const cases=[
  {name:'Wind changes aloft',note:'Above 1,000 m, wind drifts east',params:{shear:true,upperDirection:90,upperSpeed:15}},
  {name:'Already aloft',note:'1,500 m MSL at border crossing',params:{altitude:1500,ascent:0}}
 ];
-export function inside(p,poly){let c=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const a=poly[i],b=poly[j];if((a[1]>p[1])!==(b[1]>p[1]) && p[0]<(b[0]-a[0])*(p[1]-a[1])/(b[1]-a[1])+a[0])c=!c;}return c;}
-export const lithuania=[...DATA.border,[-500,-200],[-500,200]];
-const lt=lithuania;
-function nearestBorder(point){
+export const lithuania=REGION.countries.find(c=>c.code==='LTU').polygons;
+const launch=REGION.launchPolygons;
+const boundarySegments=launch.flatMap(poly=>poly.flatMap(ring=>ring.slice(1).map((q,i)=>[ring[i],q])));
+function nearestLaunchBoundary(point){
  let nearest=null,distance=Infinity;
- for(let i=1;i<DATA.border.length;i++){
-  const a=DATA.border[i-1],b=DATA.border[i],dx=b[0]-a[0],dy=b[1]-a[1];
-  // Clip each segment to the visible map before projecting onto it.
-  let lo=0,hi=1;
-  for(const [v,d,min,max] of [[a[0],dx,mapBounds.west,mapBounds.east],[a[1],dy,mapBounds.south,mapBounds.north]]){
-   if(d===0){if(v<min||v>max)hi=-1;continue;}
-   const t1=(min-v)/d,t2=(max-v)/d;lo=Math.max(lo,Math.min(t1,t2));hi=Math.min(hi,Math.max(t1,t2));
-  }
-  if(lo>hi)continue;
-  const t=Math.max(lo,Math.min(hi,((point[0]-a[0])*dx+(point[1]-a[1])*dy)/(dx*dx+dy*dy||1)));
-  const q=[a[0]+t*dx,a[1]+t*dy],dist=Math.hypot(point[0]-q[0],point[1]-q[1]);
-  if(dist<distance){distance=dist;nearest=q;}
+ for(const [a,b] of boundarySegments){
+  const dx=b[0]-a[0],dy=b[1]-a[1],t=Math.max(0,Math.min(1,((point[0]-a[0])*dx+(point[1]-a[1])*dy)/(dx*dx+dy*dy||1)));
+  const q=[a[0]+t*dx,a[1]+t*dy],d=Math.hypot(point[0]-q[0],point[1]-q[1]);
+  if(d<distance){distance=d;nearest=q;}
  }
  return {point:nearest,distance};
 }
-export function validStart(point){return onMap(point)&&(!inside(point,lt)||nearestBorder(point).distance<1e-7);}
+export function validStart(point){return onMap(point)&&(inPolygons(point,launch)||nearestLaunchBoundary(point).distance<.001);}
 export function constrainStart([x,y]){
- const point=[Math.max(mapBounds.west,Math.min(mapBounds.east,x)),Math.max(mapBounds.south,Math.min(mapBounds.north,y))];
- return inside(point,lt)?nearestBorder(point).point:point;
+ if(!Number.isFinite(x)||!Number.isFinite(y))return [...DATA.starts[0].xy];
+ const p=[Math.max(mapBounds.west,Math.min(mapBounds.east,x)),Math.max(mapBounds.south,Math.min(mapBounds.north,y))];
+ return inPolygons(p,launch)?p:nearestLaunchBoundary(p).point;
 }
-export function altitudeBands(z){
- const Z=DATA.zones,bands=[[Z.ctr,0,914.4],[Z.tma1,426.72,609.6],[Z.tma2,426.72,609.6],[Z.tma3,609.6,914.4],[Z.tma4,914.4,1981.2],[Z.tma5,1981.2,2895.6],[lt,2895.6,Infinity]];
- return {red:bands.filter(([,floor,top])=>z>=floor&&z<top).map(([p])=>p),yellow:bands.filter(([,floor])=>z<floor&&floor-z<=150).map(([p])=>p)};
-}
+const presetOrigins=DATA.starts.map(s=>constrainStart(s.xy));
 // Match the nominal integrator's five-second layer transition without running
 // any airspace intersections on the rendering thread.
 export function nominalAt(s,minutes){
@@ -54,14 +47,6 @@ export function nominalAt(s,minutes){
  const a=s.direction*Math.PI/180,b=s.upperDirection*Math.PI/180;
  return {x:x+(lower*s.speed*Math.sin(a)+upper*s.upperSpeed*Math.sin(b))/1000,y:y+(lower*s.speed*Math.cos(a)+upper*s.upperSpeed*Math.cos(b))/1000,z:s.altitude+Math.max(0,Math.min(s.ceiling-s.altitude,s.ascent*t))};
 }
-export function zoneAt(p,z){
- const Z=DATA.zones;if(z<914.4&&inside(p,Z.ctr))return 'CTR';
- if(z>=426.72&&z<609.6&&(inside(p,Z.tma1)||inside(p,Z.tma2)))return 'TMA 1/2';
- if(z>=609.6&&z<914.4&&inside(p,Z.tma3)&&!inside(p,Z.ctr))return 'TMA 3';
- if(z>=914.4&&z<1981.2&&inside(p,Z.tma4))return 'TMA 4';
- if(z>=1981.2&&z<2895.6&&inside(p,Z.tma5))return 'TMA 5';
- if(z>=2895.6&&inside(p,lt))return 'CTA / TMA 6';return null;
-}
 export function simulate(input={},horizon=180,dt=5){
  const s={...defaults,...input},origin=startPoint(s);let [x,y]=origin;let entry=null,ctr=null,near=null,border=null;const points=[];
  for(let sec=0;sec<=horizon*60;sec+=dt){
@@ -69,7 +54,7 @@ export function simulate(input={},horizon=180,dt=5){
   const at=zoneAt(p,z);if(entry===null&&at)entry={time:sec/60,zone:at};
   if(ctr===null&&z<914.4&&inside(p,DATA.zones.ctr))ctr=sec/60;
   if(near===null&&Math.hypot(x,y)<=10)near=sec/60;
-  if(border===null&&inside(p,lt))border=sec/60;
+  if(border===null&&inPolygons(p,lithuania))border=sec/60;
   points.push({x,y,z,t:sec/60,zone:at});
   const high=s.shear&&z>=1000;const v=(high?s.upperSpeed:s.speed)/1000;const a=(high?s.upperDirection:s.direction)*Math.PI/180;
   x+=dt*v*Math.sin(a);y+=dt*v*Math.cos(a);

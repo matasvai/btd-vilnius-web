@@ -13,3 +13,5 @@ GitHub Pages publishes `dist/` when it changes on `main`. No ChatGPT hosting ser
 Country geometry: geoBoundaries / OpenStreetMap, ODbL 1.0. Attribution, derived boundary data, airspace sources and limitations are included in the website and report.
 
 Population: WorldPop / University of Southampton, 2025 R2025A v1 preliminary estimates, [DOI:10.5258/SOTON/WP00840](https://doi.org/10.5258/SOTON/WP00840), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). National grids were cropped and counts divided by geographic cell area. Full provenance and processing details are available in `dist/population-density.json`.
+
+The regional map covers all Lithuania plus an approximate 100 km margin. It includes 504 published areas from Lithuania, Latvia and Poland, with separate layer controls and point inspection. The Lithuania and Vilnius buttons switch between the national overview and the original study area. Belarus and Russia are geographic context only; launch positions stay in Belarus. Airspace is a sourced snapshot, not live NOTAM or activation data. The PDF remains the original Vilnius case study.
