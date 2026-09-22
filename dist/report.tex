@@ -1,0 +1,138 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=22mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern,amsmath,graphicx,booktabs,array,xcolor,enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{microtype}
+\definecolor{ink}{HTML}{14283D}
+\definecolor{teal}{HTML}{087F7A}
+\color{ink}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\setlist[itemize]{leftmargin=*,itemsep=3pt,topsep=3pt}
+\setlength{\emergencystretch}{2em}
+\newcommand{\source}[2]{\href{#1}{#2}}
+\begin{document}
+{\sffamily\LARGE\bfseries BTD}\par
+{\large Balion\k{u} taikini\k{u} deaktyvavimas}\par
+{\small Deactivation of balloon targets}\par
+\vspace{4mm}
+{\sffamily\Large Time to Vilnius airspace}\par
+{\small An illustrative drift and response-time study \hfill 22 September 2026}
+\vspace{3mm}\hrule\vspace{4mm}
+
+\textbf{The useful answer is two different times.} From the nearest border area, a balloon moving roughly toward Vilnius Airport at 10 m/s takes about \textbf{30 minutes to reach the low-level control zone} if it stays at 500 m above mean sea level. But an already elevated balloon may enter wider controlled airspace \textbf{at the border itself}. In the example that starts at 350 m and rises at 2 m/s, the first controlled-airspace entry occurs after only \textbf{2.2 minutes}.
+
+Those figures are model outputs, not measured warning times. Airport restrictions can be imposed before a balloon reaches a particular drawn boundary; this study does not estimate an airport-closure decision or collision probability.
+
+\section*{A distance-based first estimate}
+The closest point in the downloaded border geometry is approximately \textbf{27.7 km from the airport reference point}. For approximately aligned, constant-speed motion, $t=d/v$. The table uses that illustrative start and a low, 500 m MSL trajectory toward the airport.
+
+\begin{center}\small
+\begin{tabular}{rrrrr}\toprule
+Wind speed & Speed & Low CTR & Within 10 km & Airport location\\
+(m/s) & (km/h) & (min) & (min) & (min)\\\midrule
+5 & 18 & 61 & 59 & 92\\
+10 & 36 & 31 & 29 & 46\\
+15 & 54 & 20 & 20 & 31\\
+20 & 72 & 15 & 15 & 23\\\bottomrule
+\end{tabular}\end{center}
+{\small Rounded geometric estimates. These wind speeds are chosen scenarios, not a local climatology. The 10 km radius is an arbitrary distance reference, not an official airspace or safety boundary.}
+
+\section*{What does ``Vilnius airspace'' mean?}
+\begin{itemize}
+\item \textbf{Lithuanian airspace:} essentially zero additional travel time when the object crosses the border. Starting farther inside Belarus adds travel time before that crossing.
+\item \textbf{Vilnius CTR and TMA:} three-dimensional volumes. The CTR surrounds the airport at low altitude; the wider TMA has different floors in different places. Parts of the TMA adjoin the state border [1,2].
+\item \textbf{An issue for aircraft:} no universal radius or timer. The relevant aircraft paths, balloon altitude, tracking uncertainty and air-traffic-control judgment matter. The airport operator has documented balloon-related disruption [3].
+\end{itemize}
+
+\newpage
+\section*{Geography and direction}
+\includegraphics[width=.92\textwidth]{figures/regional-map.pdf}
+
+{\small\textbf{Figure 1.} Local map in kilometres relative to Vilnius Airport. Tracks show the first 60 minutes of selected scenarios at 10 m/s below the wind-change height. The eastward segment uses 15 m/s. Airspace fills show horizontal footprints, not the airspace applicable at every altitude. Sources: [1,2,4]. All figure elements are vector graphics.}
+
+From this particular nearest-border point, the direction toward the airport is approximately \textbf{298\textdegree}, or west-northwest. A drift toward 315\textdegree\ is northwest but does not pass over the airport: its closest approach is about 8.2 km in the model. Nearby border starts change the alignment, so ``northwest'' alone does not determine an arrival time.
+
+The site uses \textbf{the direction of travel}, clockwise from true north. Meteorological wind direction normally describes where the wind comes from. A wind from the southeast, 135\textdegree, produces drift toward the northwest, 315\textdegree. All chosen wind speeds are at balloon altitude; a surface-wind reading is not substituted for wind aloft.
+
+\textbf{Source limits.} Airspace geometry is transcribed from the accessible AIP issue effective 11 June 2026. It is not certified as the latest issue for the report date. Later amendments, temporary restrictions and NOTAMs are omitted. The border comes from geoBoundaries' Lithuania dataset, representing 2017 and derived from OpenStreetMap; it is suitable for an approximate map, not a legal boundary survey.
+
+\newpage
+\section*{Eight illustrative cases}
+All cases start in the same nearest-border area. Unless specified otherwise: drift speed 10 m/s, direction 300\textdegree, altitude 350 m MSL, climb rate 2 m/s, leveling at 1,500 m MSL. The simulation horizon is 180 minutes. Times below are in minutes after the modeled border start.
+
+\begin{center}\small
+\begin{tabular}{p{54mm}rrr}\toprule
+Case & First controlled & Low CTR & Within 10 km\\\midrule
+Low, direct drift & 30.7 & 30.7 & 29.5 \\
+Climbing balloon & 2.2 & No entry & 29.5 \\
+Fast drift & 2.2 & No entry & 14.8 \\
+Slow drift & 2.2 & No entry & 59.0 \\
+Northwest, low & 33.5 & 33.5 & 34.5 \\
+Crosswind miss & No entry & No entry & No entry \\
+Wind changes aloft & 2.2 & No entry & No entry \\
+Already aloft & 0* & No entry & 29.5 \\
+\bottomrule\end{tabular}\end{center}
+{\small *The numerical model gives 5 seconds for the elevated case, owing to map discretization; interpret this as entry at crossing. ``No entry'' means none in the modeled volume within three hours, not a safe flight.}
+
+\begin{itemize}
+\item \textbf{Low, direct:} stays at 500 m MSL, direction 298\textdegree. Horizontal distance determines CTR entry.
+\item \textbf{Climbing / fast / slow:} speeds 10, 20 and 5 m/s. Each is already under the outer TMA footprint and crosses its 610 m floor after about 2.2 minutes. Faster drift still greatly reduces time to the airport vicinity.
+\item \textbf{Northwest, low / crosswind miss:} stays at 500 m, with directions 315\textdegree\ and 0\textdegree\ respectively.
+\item \textbf{Wind changes aloft:} the drift changes to eastward, 90\textdegree, at 15 m/s above 1,000 m. It enters the TMA first, then turns away from the airport.
+\item \textbf{Already aloft:} constant 1,500 m MSL at the border. This is a crossing condition, not a balloon released from ground level.
+\end{itemize}
+
+\includegraphics[width=\textwidth]{figures/time-and-altitude.pdf}
+{\small\textbf{Figure 2.} Left: fixed-path distance divided by speed. Right: the climbing example reaches the TMA floor quickly, despite the much longer trip to the airport area.}
+
+\newpage
+\section*{Model and uncertainty}
+The balloon is a passive tracer. In local east/north coordinates, with speed $v$ in m/s and drift bearing $\theta$,
+\[
+\dot{x}=v(z)\sin\theta(z),\qquad
+\dot{y}=v(z)\cos\theta(z),\qquad
+z(t)=z_0+\min\!\left(wt,\max(0,z_c-z_0)\right).
+\]
+The model uses either one uniform wind or two uniform layers separated at 1,000 m MSL. It integrates at five-second steps and checks whether each point lies inside an airspace polygon and within its vertical limits. The upper TMA/CTA transition heights use the standard-atmosphere approximations FL065 $\approx$ 1,981 m and FL095 $\approx$ 2,896 m; actual pressure altitudes vary. The local map uses an equirectangular approximation centred at the airport.
+
+\textbf{Sensitivity, not probability.} Nine trajectories combine speed multipliers 0.8, 1.0 and 1.2 with direction offsets $-10\textdegree$, $0\textdegree$ and $+10\textdegree$. Both wind layers receive the same perturbation. The displayed entry range is conditional on trajectories that enter within the horizon; misses are counted separately. These nine choices have no calibrated statistical likelihood and do not include start-position or ascent uncertainty.
+
+\section*{Time available to a response system}
+Let $t_e$ be the first entry time and $t_d$ the time at which the object is detected, measured from the same start. The remaining interval is
+\[
+T_{\mathrm{remaining}}=\max(0,t_e-t_d).
+\]
+A five-minute detection delay leaves about 26 minutes before the low, direct case enters the CTR, but no pre-entry time in the climbing or already-elevated examples. Verification, decision-making, communication and response time must then be subtracted. This analysis supplies timing context for BTD; it does not demonstrate that a neutralization method is feasible or safe.
+
+\textbf{What this cannot resolve.} No live wind profile, terrain, buoyancy evolution, burst, descent, real detection coverage or aircraft trajectories are used. A fixed high-altitude path may be unrealistic over three hours. An object can threaten aircraft outside the CTR or the 10 km circle. Operational assessment requires measured tracks with uncertainty, time-varying winds aloft, current airspace/NOTAM information and coordination with the responsible aviation authorities.
+
+\textbf{Checks completed.} Point-in-polygon altitude checks, a no-drift case, an analytical straight-line circle-entry comparison, and all eight scenarios recomputed at one-second resolution. Entry-time differences stayed below 0.11 minutes. These are numerical consistency checks, not real-world validation.
+
+\section*{Sources and reproducibility}
+{\footnotesize
+[1] Oro navigacija, \source{https://www.ans.lt/a1/aip/03_11Jun2026/2026-06-11-000000/html/eAIP/EY-AD-2-EYVI-en-US.html}{AIP EYVI AD 2.2 and 2.17}, effective 11 June 2026. Airport reference point and CTR.\par
+[2] Oro navigacija, \source{https://www.ans.lt/a1/aip/03_11Jun2026/2026-06-11-000000/html/eAIP/EY-ENR-2.1-en-US.html}{AIP ENR 2.1}, same issue. TMA/CTA lateral and vertical definitions.\par
+[3] Lithuanian Airports, \source{https://ltou.lt/en/airspace-disruptions-trigger-legal-action-lithuanian-airports-seek-prosecutors-investigation-over-hostile-balloon-launches/}{Airspace Disruptions Trigger Legal Action}. Official context; no closure threshold inferred.\par
+[4] geoBoundaries, \source{https://www.geoboundaries.org/api/current/gbOpen/LTU/ADM0/}{LTU ADM0 metadata}, boundary ID LTU-ADM0-91383639; 2017 representation, build December 2023. Underlying data: \source{https://www.openstreetmap.org/copyright}{\copyright\ OpenStreetMap contributors, ODbL 1.0}. Derived geometry is distributed with the site. Sources accessed 22 September 2026.\par
+The accompanying site includes the model, eight presets, PDF report and LaTeX source. The local project also retains the source boundary, computed scenario values, verification script and separate vector PDF figures. No empirical performance claim is made.
+}
+
+\newpage
+\section*{Probability cloud and custom starts}
+The starting position can now be moved on the map or entered as coordinates. Set wind direction with the compass or exact bearing. All timers begin at the selected start, which may be on either side of the border. Report examples retain their original nearest-border start.
+
+\includegraphics[width=\textwidth]{figures/probability-cloud.pdf}
+
+{\small\textbf{Figure 3.} Example at 30 minutes for the default climbing scenario. Independent initial-position errors have a standard deviation of 0.5 km per horizontal axis; wind-speed multiplier uncertainty is 20\%, and direction uncertainty is 10\textdegree. The cloud is conditional on those assumed distributions, not calibrated against observations. All marks and contours are vector graphics.}
+
+\textbf{Construction.} The model uses 512 fixed, reproducible Monte Carlo draws. Horizontal starting errors and speed/direction errors are independent Gaussian variables. The sampled speed multiplier is clipped at zero. Each wind perturbation persists throughout a trajectory and is shared across both wind layers; altitude follows the selected climb without random error. Horizontal drift is integrated analytically within each constant-wind layer.
+
+At each displayed time, the sample mean and covariance define an ellipse orientation. The 50th and 90th percentiles of the samples' squared Mahalanobis distances set the two contour sizes. Thus approximately 50\% and 90\% of the generated positions lie inside the respective ellipses. Shading on the website is illustrative; it is not an independently estimated probability density.
+
+\textbf{Example size.} At 30 minutes the 90\% ellipse has principal-axis dimensions of approximately 15.3 by 13.6 km and an area of 163 km$^2$. The displayed fraction of samples in controlled airspace is a conditional position statistic, not collision probability, a first-entry probability, or a trigger for airport closure.
+
+\textbf{Limits and checks.} Ellipses can enclose empty space when the distribution is skewed or non-elliptical. The assumptions omit time-changing forecast errors, vertical uncertainty and terrain. The cloud is not a worst-case bound: some samples lie outside the 90\% contour. Tests check empirical contour coverage, reproducibility, coordinate round trips and zero-error agreement with the nominal trajectory. The site and its source repository remain access-restricted.
+
+\end{document}
