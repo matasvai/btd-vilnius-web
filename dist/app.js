@@ -2,6 +2,8 @@ import {DATA} from './data.js';
 import {defaults,cases,timeText,startPoint,toCoordinates,fromCoordinates,onMap,mapBounds,compassBearing,validStart,constrainStart,nominalAt,altitudeBands} from './model.js';
 import {cloudAt} from './cloud.js';
 import {POPULATION} from './population.js';
+import {createMapNavigation} from './map-navigation.js';
+let mapNavigation;
 let errors={speed:20,direction:10,position:.5};
 let state={...defaults},result,playing=false,timer,frame=null,revision=0,busy=false,pending=null,lastAltitude;
 const worker=new Worker(new URL('./simulation-worker.js',import.meta.url),{type:'module'});
@@ -32,11 +34,12 @@ function initMap(){
  svg+=`<path d="M${DATA.border.map(q=>`${q[0]},${-q[1]}`).join('L')}" fill="none" stroke="#c1c4bf" stroke-width=".4"/><circle cx="0" cy="0" r="10" stroke="#e9cc74" stroke-dasharray="1 1" stroke-width=".3" fill="none"/><polyline id="nominal-path" stroke="#fdb913" stroke-opacity=".8" stroke-width=".45" fill="none"/>`;
  svg+='<defs><clipPath id="red-height" clipPathUnits="userSpaceOnUse"><path id="red-zones" clip-rule="nonzero"/></clipPath><clipPath id="yellow-height" clipPathUnits="userSpaceOnUse"><path id="yellow-zones" clip-rule="nonzero"/></clipPath>';
  for(const [name,color] of [['green','#64df94'],['yellow','#fdb913'],['red','#ff555d']])svg+=`<radialGradient id="density-${name}"><stop offset="0" stop-color="${color}" stop-opacity=".78"/><stop offset=".5" stop-color="${color}" stop-opacity=".5"/><stop offset="1" stop-color="${color}" stop-opacity=".05"/></radialGradient>`;
- svg+='<mask id="outside-bands" maskUnits="userSpaceOnUse" x="-40" y="-48" width="105" height="103"><rect x="-40" y="-48" width="105" height="103" fill="white"/><use href="#red-zones" fill="black"/><use href="#yellow-zones" fill="black"/></mask><mask id="below-red" maskUnits="userSpaceOnUse" x="-40" y="-48" width="105" height="103"><rect x="-40" y="-48" width="105" height="103" fill="white"/><use href="#red-zones" fill="black"/></mask></defs>';
+ svg+='<mask id="outside-bands" maskUnits="userSpaceOnUse" x="-40" y="-48" width="105" height="103"><rect id="outside-bands-background" x="-40" y="-48" width="105" height="103" fill="white"/><use href="#red-zones" fill="black"/><use href="#yellow-zones" fill="black"/></mask><mask id="below-red" maskUnits="userSpaceOnUse" x="-40" y="-48" width="105" height="103"><rect id="below-red-background" x="-40" y="-48" width="105" height="103" fill="white"/><use href="#red-zones" fill="black"/></mask></defs>';
  for(const name of ['green','yellow','red'])svg+=`<g ${name==='green'?'mask="url(#outside-bands)"':`clip-path="url(#${name}-height)" ${name==='yellow'?'mask="url(#below-red)"':''}`}><ellipse id="cloud-${name}" fill="url(#density-${name})"/></g>`;
- svg+='<g id="cloud-contours"><ellipse id="cloud-90" fill="none" stroke="#fff6db" stroke-width=".35" stroke-dasharray="1 .7"/><ellipse id="cloud-50" fill="none" stroke="#fff6db" stroke-width=".35"/></g><rect id="start-pin" width="2" height="2" fill="#c1272d" stroke="#fff3bd" stroke-width=".4"/><text id="start-label">Start</text>';
+ svg+='<g id="cloud-contours"><ellipse id="cloud-90" fill="none" stroke="#fff6db" stroke-width=".35" stroke-dasharray="1 .7"/><ellipse id="cloud-50" fill="none" stroke="#fff6db" stroke-width=".35"/></g>';
  svg+='<path d="M-1,0H1M0,-1V1" stroke="#fff" stroke-width=".5"/><text x="1.8" y="1.2">VNO airport</text><text class="country" x="-29" y="-24">LITHUANIA</text><text class="country" x="36" y="34">BELARUS</text><path d="M-32,41H-22M-32,40v2M-22,40v2" stroke="#bccddd" stroke-width=".3"/><text x="-30" y="44">10 km</text><text x="57" y="-34">N ↑</text>';
  DATA.places.forEach(q=>svg+=`<circle cx="${q.xy[0]}" cy="${-q.xy[1]}" r=".3" fill="#acbed0"/><text x="${q.xy[0]+1}" y="${-q.xy[1]-1}">${q.name}</text>`);
+ svg+='<g id="start-marker" tabindex="0" role="button" aria-label="Launch point. Drag to move within Belarus, or use arrow keys for 1 km; Shift for 5 km."><title>Drag this marker to move the start</title><rect class="start-hit" x="-22" y="-22" width="44" height="44" fill="transparent"/><rect id="start-pin" x="-7" y="-7" width="14" height="14" fill="#c1272d" stroke="#fff3bd" stroke-width="2"/><text id="start-label" x="12" y="20">Start</text></g>';
  $('map').innerHTML=svg;
 }
 function attrs(id,values){const element=$(id);for(const [key,value] of Object.entries(values))element.setAttribute(key,value);}
@@ -50,11 +53,11 @@ function draw(){
   const area=poly.reduce((a,q,i)=>{const r=poly[(i+1)%poly.length];return a+q[0]*r[1]-r[0]*q[1];},0);
   return path(area<0?[...poly].reverse():poly);
  }).join(' ')});lastAltitude=p.z;}
- const origin=startPoint(state);attrs('start-pin',{x:origin[0]-1,y:-origin[1]-1});attrs('start-label',{x:Math.min(origin[0]+1.5,50),y:Math.min(-origin[1]+3.5,51)});
+ mapNavigation.setStart(startPoint(state));
  $('cloud-summary').textContent=`90% cloud: ${(2*cloud.p90.rx).toFixed(1)} × ${(2*cloud.p90.ry).toFixed(1)} km`;
  $('cloud-status').textContent=`At +${elapsed} min: about ${Math.round(cloud.controlledFraction*100)}% of samples are currently inside modeled controlled airspace. The 90% ellipse covers ${cloud.area90.toFixed(1)} km².`;
  $('cloud-altitude').textContent=`${Math.round(p.z).toLocaleString()} m MSL`;
- $('map-time').textContent=`FORECAST +${elapsed} MIN · ${Math.round(p.z)} M MSL${!onMap([p.x,p.y])?' · OFF MAP':''}`;$('elapsed').textContent=elapsed+' min';
+ $('map-time').textContent=`FORECAST +${elapsed} MIN · ${Math.round(p.z)} M MSL${!onMap([p.x,p.y])?' · OUTSIDE STUDY AREA':''}`;$('elapsed').textContent=elapsed+' min';
 }
 function update(newRevision=true){
  if(frame!==null){cancelAnimationFrame(frame);frame=null;}if(newRevision)revision++;
@@ -91,9 +94,7 @@ $('direction-number').addEventListener('change',()=>{$('direction-number').value
 function setOrigin(point){if(!validStart(point))return false;stop();state.origin=point;state.start='custom';$('coordinate-error').textContent='';clearCases();requestUpdate();return true;}
 function svgPosition(svg,event){const p=new DOMPoint(event.clientX,event.clientY).matrixTransform(svg.getScreenCTM().inverse());return [p.x,p.y];}
 function dragSurface(svg,action){let pointer=null;svg.addEventListener('pointerdown',e=>{if(e.button!==0)return;if(action(e)===false)return;pointer=e.pointerId;svg.setPointerCapture(pointer);e.preventDefault();});svg.addEventListener('pointermove',e=>{if(e.pointerId===pointer)action(e);});const finish=e=>{if(pointer===e.pointerId){pointer=null;if(svg.hasPointerCapture(e.pointerId))svg.releasePointerCapture(e.pointerId);}};svg.addEventListener('pointerup',finish);svg.addEventListener('pointercancel',finish);}
-dragSurface($('map'),e=>{const [x,y]=svgPosition($('map'),e);return setOrigin(constrainStart([x,-y]));});
 dragSurface($('wind-compass'),e=>{const [x,y]=svgPosition($('wind-compass'),e);if(Math.hypot(x-60,y-60)<5)return false;setDirection(compassBearing(x-60,y-60));});
-$('map').addEventListener('keydown',e=>{const step=e.shiftKey?5:1,offset={ArrowLeft:[-step,0],ArrowRight:[step,0],ArrowUp:[0,step],ArrowDown:[0,-step]}[e.key];if(offset){e.preventDefault();const p=startPoint(state);setOrigin(constrainStart([p[0]+offset[0],p[1]+offset[1]]));}});
 $('wind-compass').addEventListener('keydown',e=>{const step=e.shiftKey?10:1;if(['ArrowLeft','ArrowDown','ArrowRight','ArrowUp'].includes(e.key)){e.preventDefault();setDirection(state.direction+(['ArrowLeft','ArrowDown'].includes(e.key)?-step:step));}});
 $('coordinates-form').addEventListener('submit',e=>{e.preventDefault();const latitude=+$('latitude').value,longitude=+$('longitude').value;if(!setOrigin(fromCoordinates(latitude,longitude)))$('coordinate-error').textContent='Choose a position on the Belarus side of the displayed border.';});
 for(const [id,key,unit] of [['speed-error','speed','%'],['direction-error','direction','°'],['position-error','position',' km']]){$(id+'-out').textContent=errors[key]+unit;$(id).addEventListener('input',e=>{errors[key]=+e.target.value;$(id+'-out').textContent=errors[key]+unit;draw();});}
@@ -114,6 +115,7 @@ if(context?.registerTool){
  }})).catch(()=>{});}catch{}
 }
 initMap();
+mapNavigation=createMapNavigation({svg:$('map'),marker:$('start-marker'),zoomIn:$('map-zoom-in'),zoomOut:$('map-zoom-out'),reset:$('map-reset-view'),zoomLabel:$('map-zoom'),onStartMove:setOrigin,constrainStart,onView:view=>{for(const id of ['outside-bands','below-red']){attrs(id,view);attrs(id+'-background',view);}}});
 $('population-toggle').addEventListener('change',e=>{attrs('population-layer',{display:e.target.checked?'inline':'none'});$('population-opacity').disabled=!e.target.checked;});
 $('population-opacity').addEventListener('input',e=>{attrs('population-layer',{opacity:+e.target.value/100});$('population-opacity-out').textContent=e.target.value+'%';});
 update();

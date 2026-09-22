@@ -4,6 +4,8 @@
 
 Public website files for the Vilnius balloon-drift study. The development repository remains private. This repository contains only the published `dist/` files and the GitHub Pages deployment workflow.
 
+Drag the map to pan, scroll or pinch to zoom, and use Reset view to return to the region. Move the starting position by dragging the red Start marker; it stays within Belarus.
+
 The map includes editable wind, Belarus-only starting positions, an assumed probability cloud, altitude colors, a WorldPop population-density layer, and a downloadable LaTeX report. This is an illustrative model, not live weather, aircraft tracking, a collision prediction or an airport-closure decision tool.
 
 GitHub Pages publishes `dist/` when it changes on `main`. No ChatGPT hosting service is required.
